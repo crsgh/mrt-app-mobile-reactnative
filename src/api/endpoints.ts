@@ -21,6 +21,25 @@ export const api = {
       const response = await client.get<{ success: boolean; trips: Trip[] }>('/api/mobile/passenger/trips');
       return response.data;
     },
+    deposit: async (amount: number) => {
+        const response = await client.post<{ success: boolean; balance: number; message: string }>('/api/wallet/deposit', {
+            amount
+        });
+        return response.data;
+    },
+    createPayment: async (amount: number, type: 'gcash' | 'grab_pay' | 'bpi' | 'ubp_online' = 'gcash') => {
+        const response = await client.post<{ success: boolean; data: any }>('/api/payments/create', {
+            amount,
+            type
+        });
+        return response.data;
+    },
+    verifyPayment: async (sourceId: string) => {
+        const response = await client.post<{ success: boolean; balance?: number; message?: string; status: string }>('/api/payments/verify', {
+            sourceId
+        });
+        return response.data;
+    }
   },
   trips: {
     tapIn: async (passengerCode: string, stationId: string) => {

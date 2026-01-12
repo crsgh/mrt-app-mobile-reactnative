@@ -3,6 +3,7 @@
     "name": "mrt-app-mobile-reactnative",
     "slug": "mrt-app-mobile-reactnative",
     "version": "1.0.0",
+    "scheme": "mrtapp",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

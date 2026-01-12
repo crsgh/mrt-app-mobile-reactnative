@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api/endpoints';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { MainTabParamList } from '../navigation/types';
 
@@ -29,9 +29,11 @@ export const HomeScreen = () => {
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    fetchActiveTrip();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchActiveTrip();
+    }, [])
+  );
 
   return (
     <ScrollView 

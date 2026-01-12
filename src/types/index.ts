@@ -7,6 +7,7 @@ export interface User {
   discountType?: string;
   isActive?: boolean;
   joinedDate?: string;
+  balance?: number;
 }
 
 export interface Station {

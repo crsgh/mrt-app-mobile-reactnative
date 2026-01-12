@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Button, Alert, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
@@ -10,6 +10,7 @@ export const ScannerScreen = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const lockRef = useRef(false);
   const navigation = useNavigation();
   const { user } = useAuthStore();
 
@@ -29,8 +30,9 @@ export const ScannerScreen = () => {
   }
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
-    if (scanned || processing) return;
+    if (scanned || processing || lockRef.current) return;
     
+    lockRef.current = true;
     setScanned(true);
     setProcessing(true);
 
@@ -47,6 +49,12 @@ export const ScannerScreen = () => {
       const action = activeTrip ? 'tap_out' : 'tap_in';
       const stationId = data; // Assuming QR code is just the stationId string
 
+      // Double check if we already processed this
+      if (action === 'tap_out' && !activeTrip) {
+          // Should be covered by activeTrip check above, but extra safety
+          throw new Error('No active trip to tap out from');
+      }
+
       if (action === 'tap_in') {
         await api.trips.tapIn(user!.username, stationId);
         Alert.alert('Success', 'Tapped In Successfully!', [
@@ -62,9 +70,20 @@ export const ScannerScreen = () => {
     } catch (error: any) {
       console.error('Scan Error:', error);
       const msg = error.response?.data?.error || error.message || 'Failed to process tap';
-      Alert.alert('Error', `${msg}\n(URL: ${BASE_URL})`, [
-        { text: 'Try Again', onPress: () => setScanned(false) }
-      ]);
+      
+      // If error is "No active trip found" and we were trying to tap out, 
+      // it likely means a race condition happened and it was already processed.
+      // We can treat it as success or just ignore it to avoid spam.
+      if (msg.includes('No active trip found') || msg.includes('Passenger already has an active trip')) {
+         // Optionally just navigate back or show a less alarming message
+         Alert.alert('Info', 'Transaction may have already been processed.', [
+             { text: 'OK', onPress: () => navigation.goBack() }
+         ]);
+      } else {
+          Alert.alert('Error', `${msg}\n(URL: ${BASE_URL})`, [
+            { text: 'Try Again', onPress: () => { lockRef.current = false; setScanned(false); } }
+          ]);
+      }
     } finally {
       setProcessing(false);
     }

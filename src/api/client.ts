@@ -4,11 +4,9 @@ import { Platform } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 
 const getBaseUrl = () => {
-  if (Platform.OS === 'web') {
-    return 'http://localhost:3000';
-  }
-  // Tunnel URL for Office Wi-Fi Access
-  return 'https://fuzzy-gifts-act.loca.lt'; 
+  // Replace with your computer's LAN IP (e.g., from ipconfig)
+  // When using Hotspot, it's usually 172.20.10.x or 192.168.x.x
+  return 'http://172.20.10.3:3000'; 
 };
 
 export const BASE_URL = getBaseUrl();
@@ -17,7 +15,6 @@ export const client = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-    'Bypass-Tunnel-Reminder': 'true', // Required to skip Localtunnel warning page
   },
 });
 
