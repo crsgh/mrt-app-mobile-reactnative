@@ -7,6 +7,10 @@ export const api = {
       const response = await client.post<AuthResponse>('/api/auth/login', { username, password });
       return response.data;
     },
+    signup: async (data: any) => {
+      const response = await client.post<AuthResponse>('/api/auth/signup', data);
+      return response.data;
+    },
   },
   mobile: {
     getStations: async () => {

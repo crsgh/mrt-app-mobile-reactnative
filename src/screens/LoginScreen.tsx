@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { api } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
 
@@ -12,6 +13,7 @@ export const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuthStore();
   const [serverStatus, setServerStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+  const navigation = useNavigation();
   
   React.useEffect(() => {
     checkServer();
@@ -103,6 +105,10 @@ export const LoginScreen = () => {
               <Text style={styles.buttonText}>Sign In</Text>
             )}
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.signupButton} onPress={() => navigation.navigate('Signup' as never)}>
+            <Text style={styles.signupText}>Don't have an account? Sign Up</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -191,9 +197,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 16,
   },
-  buttonText: {
+ buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  signupButton: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  signupText: {
+    color: '#000',
+    fontSize: 14,
   },
 });
