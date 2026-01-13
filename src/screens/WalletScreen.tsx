@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Modal, Alert, ActivityIndicator, Linking, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Modal, Alert, ActivityIndicator, Linking, TextInput, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../api/endpoints';
 import { Trip } from '../types';
@@ -97,7 +97,7 @@ export const WalletScreen = () => {
       setStep('method');
   };
 
-  const handleCreatePayment = async (type: 'gcash' | 'grab_pay' | 'bpi' | 'ubp_online') => {
+  const handleCreatePayment = async (type: 'gcash' | 'grab_pay' | 'paymaya') => {
       setProcessing(true);
       try {
           const result = await api.mobile.createPayment(selectedAmount, type);
@@ -245,7 +245,7 @@ export const WalletScreen = () => {
       />
       
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={resetModal}
@@ -308,32 +308,34 @@ export const WalletScreen = () => {
                       {step === 'method' && (
                           <View style={styles.methodContainer}>
                               <TouchableOpacity 
-                                style={[styles.methodButton, { backgroundColor: '#007AFF' }]}
+                                style={[styles.methodButton]}
                                 onPress={() => handleCreatePayment('gcash')}
                                 disabled={processing}
                               >
-                                  <Text style={styles.methodText}>GCash</Text>
+                                  <Image 
+                                    source={require('../../assets/gcashicon.png')} 
+                                    style={styles.methodIcon}
+                                  />
                               </TouchableOpacity>
                               <TouchableOpacity 
-                                style={[styles.methodButton, { backgroundColor: '#00C853' }]}
+                                style={[styles.methodButton]}
+                                onPress={() => handleCreatePayment('paymaya')}
+                                disabled={processing}
+                              >
+                                  <Image 
+                                    source={require('../../assets/paymayaicon.png')} 
+                                    style={styles.methodIcon}
+                                  />
+                              </TouchableOpacity>
+                              <TouchableOpacity 
+                                style={[styles.methodButton]}
                                 onPress={() => handleCreatePayment('grab_pay')}
                                 disabled={processing}
                               >
-                                  <Text style={styles.methodText}>GrabPay</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity 
-                                style={[styles.methodButton, { backgroundColor: '#B71C1C' }]}
-                                onPress={() => handleCreatePayment('bpi')}
-                                disabled={processing}
-                              >
-                                  <Text style={styles.methodText}>BPI Online</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity 
-                                style={[styles.methodButton, { backgroundColor: '#FF6F00' }]}
-                                onPress={() => handleCreatePayment('ubp_online')}
-                                disabled={processing}
-                              >
-                                  <Text style={styles.methodText}>UnionBank Online</Text>
+                                  <Image 
+                                    source={require('../../assets/grabicon.png')} 
+                                    style={styles.methodIcon}
+                                  />
                               </TouchableOpacity>
                           </View>
                       )}
@@ -375,7 +377,7 @@ const styles = StyleSheet.create({
   balanceCard: {
     margin: 16,
     padding: 24,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000000',
     borderRadius: 16,
     alignItems: 'center', // Center content
   },
@@ -476,7 +478,7 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: 'rgba(0,0,0,0.7)',
       justifyContent: 'flex-end', // Slide from bottom
   },
   modalContent: {
@@ -565,19 +567,24 @@ const styles = StyleSheet.create({
   },
   methodContainer: {
       width: '100%',
+      flexDirection: 'column',
   },
   methodButton: {
       width: '100%',
-      backgroundColor: '#007AFF',
-      padding: 16,
+      backgroundColor: '#ffffff',
+      padding: 12,
       borderRadius: 12,
       alignItems: 'center',
+      justifyContent: 'center',
       marginBottom: 12,
+      borderWidth: 1,
+      borderColor: '#e0e0e0',
+      minHeight: 100,
   },
-  methodText: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: '#fff',
+  methodIcon: {
+      width: 100,
+      height: 100,
+      resizeMode: 'contain',
   },
   verifyContainer: {
       alignItems: 'center',

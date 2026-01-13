@@ -33,7 +33,7 @@ export const api = {
         });
         return response.data;
     },
-    createPayment: async (amount: number, type: 'gcash' | 'grab_pay' | 'bpi' | 'ubp_online' = 'gcash') => {
+    createPayment: async (amount: number, type: 'gcash' | 'grab_pay' | 'paymaya' = 'gcash') => {
         const response = await client.post<{ success: boolean; data: any }>('/api/payments/create', {
             amount,
             type
