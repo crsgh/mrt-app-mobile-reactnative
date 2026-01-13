@@ -1,9 +1,21 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Platform, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { useAuthStore } from '../store/authStore';
+import { api } from '../api/endpoints';
+
+type DiscountType = 'none' | 'senior' | 'pwd' | 'student';
+
+const DISCOUNT_OPTIONS: { label: string; value: DiscountType }[] = [
+  { label: 'Regular (No Discount)', value: 'none' },
+  { label: 'Senior Citizen', value: 'senior' },
+  { label: 'PWD (Person with Disability)', value: 'pwd' },
+  { label: 'Student', value: 'student' },
+];
 
 export const ProfileScreen = () => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, setUser } = useAuthStore();
+  const [discountModalVisible, setDiscountModalVisible] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {
@@ -21,6 +33,28 @@ export const ProfileScreen = () => {
         ]
       );
     }
+  };
+
+  const handleDiscountTypeSelect = async (discountType: DiscountType) => {
+    setUpdating(true);
+    try {
+      const result = await api.mobile.updateDiscountType(discountType);
+      if (result.success && result.passenger) {
+        setUser(result.passenger);
+        Alert.alert('Success', `Discount type updated to ${DISCOUNT_OPTIONS.find(o => o.value === discountType)?.label}`);
+        setDiscountModalVisible(false);
+      } else {
+        Alert.alert('Error', 'Failed to update discount type');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.error || 'Failed to update discount type');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const getCurrentDiscountLabel = () => {
+    return DISCOUNT_OPTIONS.find(o => o.value === (user?.discountType || 'none'))?.label || 'Regular';
   };
 
   return (
@@ -44,15 +78,74 @@ export const ProfileScreen = () => {
           <Text style={styles.label}>Role</Text>
           <Text style={styles.value}>{user?.role}</Text>
         </View>
-        <View style={styles.item}>
+        <TouchableOpacity 
+          style={[styles.item, styles.discountItem]}
+          onPress={() => setDiscountModalVisible(true)}
+        >
           <Text style={styles.label}>Discount Type</Text>
-          <Text style={styles.value}>{user?.discountType || 'Regular'}</Text>
-        </View>
+          <View style={styles.discountValueContainer}>
+            <Text style={styles.value}>{getCurrentDiscountLabel()}</Text>
+            <Text style={styles.editIcon}>›</Text>
+          </View>
+        </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
+
+      {/* Discount Type Modal */}
+      <Modal
+        visible={discountModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDiscountModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Discount Type</Text>
+              <TouchableOpacity onPress={() => setDiscountModalVisible(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {updating && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#007AFF" />
+              </View>
+            )}
+
+            {!updating && (
+              <FlatList
+                data={DISCOUNT_OPTIONS}
+                keyExtractor={(item) => item.value}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.optionButton,
+                      user?.discountType === item.value && styles.selectedOption,
+                    ]}
+                    onPress={() => handleDiscountTypeSelect(item.value)}
+                  >
+                    <View style={styles.optionContent}>
+                      <Text style={[
+                        styles.optionLabel,
+                        user?.discountType === item.value && styles.selectedOptionLabel,
+                      ]}>
+                        {item.label}
+                      </Text>
+                      {user?.discountType === item.value && (
+                        <Text style={styles.checkmark}>✓</Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -108,6 +201,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  discountItem: {
+    paddingVertical: 16,
+  },
   label: {
     fontSize: 16,
     color: '#666',
@@ -116,6 +212,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1a1a1a',
     fontWeight: '500',
+  },
+  discountValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editIcon: {
+    fontSize: 24,
+    color: '#007AFF',
   },
   logoutButton: {
     margin: 24,
@@ -128,5 +233,69 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  closeButton: {
+    fontSize: 28,
+    color: '#666',
+  },
+  optionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  selectedOption: {
+    backgroundColor: '#f0f7ff',
+  },
+  optionContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  optionLabel: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '500',
+  },
+  selectedOptionLabel: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  checkmark: {
+    fontSize: 20,
+    color: '#007AFF',
+    fontWeight: 'bold',
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

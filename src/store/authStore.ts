@@ -9,6 +9,7 @@ interface AuthState {
   isLoading: boolean;
   login: (token: string, user: User) => Promise<void>;
   logout: () => Promise<void>;
+  setUser: (user: User) => void;
   checkAuth: () => Promise<void>;
 }
 
@@ -26,6 +27,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await storage.removeToken();
     set({ token: null, user: null, isAuthenticated: false });
+  },
+
+  setUser: (user: User) => {
+    set({ user });
   },
 
   checkAuth: async () => {

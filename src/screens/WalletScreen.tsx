@@ -125,27 +125,34 @@ export const WalletScreen = () => {
 
   const startPolling = async (sourceId: string) => {
       let attempts = 0;
-      const maxAttempts = 30; // 30 attempts * 2 seconds = 60 seconds timeout
+      const maxAttempts = 60; // 60 attempts * 2 seconds = 120 seconds timeout
       
       const poll = setInterval(async () => {
           attempts++;
           try {
               const result = await api.mobile.verifyPayment(sourceId);
               
-              if (result.success && result.status === 'chargeable') {
+              if (result.success && result.status === 'paid') {
                   // Payment successful!
                   clearInterval(poll);
                   setBalance(result.balance || balance + selectedAmount);
                   Alert.alert('Success', 'Payment successful!');
                   resetModal();
                   onRefresh();
-              } else if (result.status === 'cancelled' || result.status === 'expired') {
+              } else if (result.status === 'cancelled' || result.status === 'expired' || result.status === 'failed') {
                   clearInterval(poll);
-                  Alert.alert('Payment Failed', 'The payment was cancelled or expired.');
+                  Alert.alert('Payment Failed', `The payment was ${result.status}.`);
                   resetModal();
+              } else if (result.status === 'consumed') {
+                  // Already processed
+                  clearInterval(poll);
+                  setBalance(result.balance || balance + selectedAmount);
+                  Alert.alert('Success', 'Payment already processed!');
+                  resetModal();
+                  onRefresh();
               } else if (attempts >= maxAttempts) {
                   clearInterval(poll);
-                  Alert.alert('Timeout', 'Payment verification timed out. Please check your balance later.');
+                  Alert.alert('Timeout', 'Payment verification timed out. Please try verifying manually.');
                   resetModal();
               }
           } catch (error) {

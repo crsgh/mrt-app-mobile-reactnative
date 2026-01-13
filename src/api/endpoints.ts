@@ -17,6 +17,12 @@ export const api = {
       const response = await client.get<{ success: boolean; passenger: User }>('/api/mobile/passenger/profile');
       return response.data;
     },
+    updateDiscountType: async (discountType: 'none' | 'senior' | 'pwd' | 'student') => {
+      const response = await client.put<{ success: boolean; passenger: User; message: string }>('/api/mobile/passenger/profile', {
+        discountType
+      });
+      return response.data;
+    },
     getTrips: async () => {
       const response = await client.get<{ success: boolean; trips: Trip[] }>('/api/mobile/passenger/trips');
       return response.data;
