@@ -40,13 +40,56 @@ const TabNavigator = () => (
 
         return <Ionicons name={iconName} size={size} color={color} />;
       },
-      tabBarActiveTintColor: '#007AFF',
-      tabBarInactiveTintColor: 'gray',
+      tabBarActiveTintColor: '#000000',
+      tabBarInactiveTintColor: '#999',
+      tabBarStyle: {
+        backgroundColor: '#fff',
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+        paddingBottom: 5,
+        paddingTop: 5,
+        height: 65,
+      },
+      tabBarLabelStyle: {
+        fontSize: 12,
+        fontWeight: '600',
+        marginTop: 5,
+      },
+      headerShown: true,
+      headerStyle: {
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        color: '#1a1a1a',
+      },
+      animationEnabled: true,
     })}
   >
-    <Tab.Screen name="Scanner" component={ScannerScreen} options={{ headerShown: false }} />
-    <Tab.Screen name="Wallet" component={WalletScreen} />
-    <Tab.Screen name="Profile" component={ProfileScreen} />
+    <Tab.Screen 
+      name="Wallet" 
+      component={WalletScreen}
+      options={{
+        title: 'Wallet',
+      }}
+    />
+    <Tab.Screen 
+      name="Scanner" 
+      component={ScannerScreen}
+      options={{
+        title: 'Scan QR',
+        headerShown: false,
+      }}
+    />
+    <Tab.Screen 
+      name="Profile" 
+      component={ProfileScreen}
+      options={{
+        title: 'Profile',
+      }}
+    />
   </Tab.Navigator>
 );
 

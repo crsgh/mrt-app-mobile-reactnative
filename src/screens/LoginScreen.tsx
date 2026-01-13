@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView, Image } from 'react-native';
 import { api } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
 
@@ -55,7 +55,11 @@ export const LoginScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>MRT Mobile</Text>
+        <Image 
+          source={require('../../assets/globaltek-logo.png')} 
+          style={styles.logo}
+        />
+        <Text style={styles.title}>GlobalTek MRT</Text>
         <Text style={styles.subtitle}>Sign in to your account</Text>
 
         {serverStatus === 'error' && (
@@ -114,6 +118,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 24,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+    marginBottom: 24,
   },
   title: {
     fontSize: 32,
@@ -174,7 +185,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 48,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#000000',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
