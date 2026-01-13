@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Button, Alert, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { api } from '../api/endpoints';
 import { BASE_URL } from '../api/client';
@@ -11,9 +11,20 @@ export const ScannerScreen = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [isFocused, setIsFocused] = useState(true);
   const lockRef = useRef(false);
   const navigation = useNavigation();
   const { user } = useAuthStore();
+
+  // Only activate camera when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      setIsFocused(true);
+      return () => {
+        setIsFocused(false);
+      };
+    }, [])
+  );
 
   useEffect(() => {
     navigation.setOptions({
@@ -98,27 +109,29 @@ export const ScannerScreen = () => {
 
   return (
     <View style={styles.container}>
-      <CameraView
-        style={styles.camera}
-        facing="back"
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr"],
-        }}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.scanArea} />
-          <Text style={styles.instructions}>
-            Scan Station QR Code to Tap In/Out
-          </Text>
-          {processing && (
-            <View style={styles.processing}>
-              <ActivityIndicator size="large" color="#fff" />
-              <Text style={styles.processingText}>Processing...</Text>
-            </View>
-          )}
-        </View>
-      </CameraView>
+      {isFocused && (
+        <CameraView
+          style={styles.camera}
+          facing="back"
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ["qr"],
+          }}
+        >
+          <View style={styles.overlay}>
+            <View style={styles.scanArea} />
+            <Text style={styles.instructions}>
+              Scan Station QR Code to Tap In/Out
+            </Text>
+            {processing && (
+              <View style={styles.processing}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={styles.processingText}>Processing...</Text>
+              </View>
+            )}
+          </View>
+        </CameraView>
+      )}
     </View>
   );
 };

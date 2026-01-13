@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Platform, Modal, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Platform, Modal, FlatList, ActivityIndicator, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api/endpoints';
 
@@ -16,6 +17,7 @@ export const ProfileScreen = () => {
   const { user, logout, setUser } = useAuthStore();
   const [discountModalVisible, setDiscountModalVisible] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {
@@ -33,6 +35,79 @@ export const ProfileScreen = () => {
         ]
       );
     }
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.6,
+      });
+
+      if (!result.canceled) {
+        await uploadProfilePicture(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const uploadProfilePicture = async (imageUri: string) => {
+    setUploadingImage(true);
+    try {
+      // Read the image file as base64
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      const base64 = await blobToBase64(blob);
+
+      console.log('Uploading profile picture, size:', base64.length);
+
+      const result = await api.mobile.uploadProfilePicture({
+        profilePicture: base64
+      });
+      
+      if (result.success && result.passenger) {
+        console.log('Upload successful, updating user with:', result.passenger);
+        setUser(result.passenger);
+        
+        // Add delay to ensure database has persisted the data
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Refresh profile to ensure picture is loaded
+        const profileData = await api.mobile.getProfile();
+        if (profileData.success && profileData.passenger) {
+          console.log('Profile refreshed, picture:', profileData.passenger.profilePicture ? 'Present' : 'Missing');
+          console.log('Picture size after refresh:', profileData.passenger.profilePicture?.length || 0);
+          setUser(profileData.passenger);
+        } else {
+          console.log('Profile refresh failed:', profileData);
+        }
+        
+        Alert.alert('Success', 'Profile picture updated successfully');
+      } else {
+        Alert.alert('Error', result?.message || 'Failed to upload profile picture');
+      }
+    } catch (error: any) {
+      console.log('Upload error details:', error);
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to upload profile picture';
+      Alert.alert('Error', errorMsg);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        resolve(result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   };
 
   const handleDiscountTypeSelect = async (discountType: DiscountType) => {
@@ -60,11 +135,33 @@ export const ProfileScreen = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user?.firstName?.[0] || user?.username?.[0] || 'U'}
-          </Text>
-        </View>
+        <TouchableOpacity 
+          onPress={handlePickImage}
+          disabled={uploadingImage}
+          style={styles.avatarContainer}
+        >
+          {user?.profilePicture ? (
+            <Image 
+              source={{ uri: user.profilePicture }} 
+              style={[styles.avatar, { width: 100, height: 100 }]}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {user?.firstName?.[0] || user?.username?.[0] || 'U'}
+              </Text>
+            </View>
+          )}
+          {uploadingImage && (
+            <View style={styles.uploadingOverlay}>
+              <ActivityIndicator color="#fff" />
+            </View>
+          )}
+          <View style={styles.editBadge}>
+            <Text style={styles.editBadgeText}>📷</Text>
+          </View>
+        </TouchableOpacity>
         <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
         <Text style={styles.username}>@{user?.username}</Text>
       </View>
@@ -162,22 +259,60 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 32,
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderRadius: 12,
+    margin: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatarContainer: {
+    position: 'relative',
     marginBottom: 16,
   },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
   avatarText: {
-    fontSize: 32,
+    fontSize: 40,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  editBadgeText: {
+    fontSize: 16,
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 50,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   name: {
     fontSize: 24,
@@ -225,7 +360,7 @@ const styles = StyleSheet.create({
   logoutButton: {
     margin: 24,
     padding: 16,
-    backgroundColor: '#ff3b30',
+    backgroundColor: '#000000',
     borderRadius: 12,
     alignItems: 'center',
   },

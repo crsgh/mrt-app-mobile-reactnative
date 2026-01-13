@@ -8,6 +8,7 @@ export interface User {
   isActive?: boolean;
   joinedDate?: string;
   balance?: number;
+  profilePicture?: string;
 }
 
 export interface Station {

@@ -45,6 +45,10 @@ export const api = {
             sourceId
         });
         return response.data;
+    },
+    uploadProfilePicture: async (data: { profilePicture: string }) => {
+        const response = await client.post<{ success: boolean; passenger: User; message: string }>('/api/mobile/passenger/profile-picture', data);
+        return response.data;
     }
   },
   trips: {
