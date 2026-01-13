@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { storage } from '../utils/storage';
 import { User } from '../types';
+import { api } from '../api/endpoints';
 
 interface AuthState {
   token: string | null;
@@ -22,6 +23,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (token: string, user: User) => {
     await storage.setToken(token);
     set({ token, user, isAuthenticated: true });
+    
+    // Fetch fresh profile data including profile picture
+    try {
+      const profileData = await api.mobile.getProfile();
+      if (profileData.success && profileData.passenger) {
+        set({ user: profileData.passenger });
+      }
+    } catch (error) {
+      console.log('Failed to fetch profile after login:', error);
+      // Still logged in, just with initial user data if profile fetch fails
+    }
   },
 
   logout: async () => {
