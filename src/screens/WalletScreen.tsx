@@ -2,11 +2,13 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Modal, Alert, ActivityIndicator, Linking, TextInput, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../api/endpoints';
-import { Trip } from '../types';
+import { TopUpTransaction, Trip } from '../types';
 
 export const WalletScreen = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [balance, setBalance] = useState<number>(0);
+  const [topUps, setTopUps] = useState<TopUpTransaction[]>([]);
+  const [showTopUps, setShowTopUps] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -18,11 +20,19 @@ export const WalletScreen = () => {
 
   const fetchData = async () => {
     try {
-      const [tripsData, profileData] = await Promise.all([
+      const [tripsData, profileData, topUpData] = await Promise.all([
         api.mobile.getTrips(),
-        api.mobile.getProfile()
+        api.mobile.getProfile(),
+        api.mobile.getTopUpHistory()
       ]);
-      setTrips(tripsData.trips.reverse()); // Show newest first
+
+      const sortedRecentTrips = [...tripsData.trips]
+        .sort((a, b) => new Date(b.tapInTime).getTime() - new Date(a.tapInTime).getTime())
+        .slice(0, 3);
+      setTrips(sortedRecentTrips);
+      if (topUpData?.transactions) {
+        setTopUps(topUpData.transactions);
+      }
       if (profileData.passenger && profileData.passenger.balance !== undefined) {
           setBalance(profileData.passenger.balance);
       }
@@ -216,6 +226,27 @@ export const WalletScreen = () => {
     </View>
   );
 
+  const renderTopUpItem = (item: TopUpTransaction) => (
+    <View key={item.id} style={styles.topUpCard}>
+      <View style={styles.row}>
+        <View>
+          <Text style={styles.topUpTitle}>Wallet Top-up</Text>
+          <Text style={styles.topUpMethod}>{item.method?.toUpperCase?.() || 'PAYMENT'}</Text>
+        </View>
+        <View style={styles.rightSide}>
+          <Text style={styles.topUpAmount}>₱{item.amount.toFixed(2)}</Text>
+          <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+        </View>
+      </View>
+      <View style={styles.footer}>
+        <Text style={styles.time}>{new Date(item.createdAt).toLocaleTimeString()}</Text>
+        <Text style={[styles.status, { color: item.status === 'paid' ? '#34C759' : '#FF3B30' }]}>
+          {item.status.toUpperCase()}
+        </Text>
+      </View>
+    </View>
+  );
+
 
 
   return (
@@ -223,27 +254,61 @@ export const WalletScreen = () => {
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Current Balance</Text>
         <Text style={styles.balanceValue}>₱{balance.toFixed(2)}</Text>
-        <TouchableOpacity style={styles.depositButton} onPress={() => {
-            setStep('amount');
-            setModalVisible(true);
-        }}>
-            <Text style={styles.depositButtonText}>+ Load Wallet</Text>
-        </TouchableOpacity>
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={styles.depositButton} onPress={() => {
+              setStep('amount');
+              setModalVisible(true);
+          }}>
+              <Text style={styles.depositButtonText}>+ Load Wallet</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.depositButton}
+            onPress={() => setShowTopUps(true)}
+          >
+            <Text style={styles.depositButtonText}>Top-up History</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Recent Transactions</Text>
-      
       <FlatList
         data={trips}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <View style={styles.listHeaderContainer}>
+            <Text style={styles.sectionTitle}>Recent Trips</Text>
+          </View>
+        }
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           !loading ? <Text style={styles.emptyText}>No transactions found</Text> : null
         }
       />
       
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showTopUps}
+        onRequestClose={() => setShowTopUps(false)}
+      >
+        <View style={styles.modalOverlayCentered}>
+          <View style={styles.historyContent}>
+            <Text style={styles.modalTitle}>Top-up History</Text>
+            {topUps.length === 0 ? (
+              !loading ? <Text style={styles.emptyText}>No top-ups yet</Text> : null
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {topUps.slice(0, 20).map(renderTopUpItem)}
+              </ScrollView>
+            )}
+            <TouchableOpacity style={styles.closeButton} onPress={() => setShowTopUps(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <Modal
         animationType="fade"
         transparent={true}
@@ -346,7 +411,7 @@ export const WalletScreen = () => {
                               <Text style={styles.verifyText}>
                                   Waiting for payment completion...
                               </Text>
-                              <Text style={[styles.verifyText, { fontSize: 14, color: '#666' }]}>
+                              <Text style={[styles.verifyText, { fontSize: 14, color: '#666' }]}> 
                                   The app will update automatically once your payment is confirmed.
                               </Text>
                           </View>
@@ -414,6 +479,11 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 0,
   },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -474,6 +544,48 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#999',
     marginTop: 32,
+  },
+  modalOverlayCentered: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  historyContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  listHeaderContainer: {
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  topUpCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  topUpTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  topUpMethod: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  topUpAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#34C759',
   },
   // Modal Styles
   modalOverlay: {

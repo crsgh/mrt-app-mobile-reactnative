@@ -1,5 +1,5 @@
 import { client } from './client';
-import { AuthResponse, Station, Trip, User } from '../types';
+import { AuthResponse, Station, TopUpTransaction, Trip, User } from '../types';
 
 export const api = {
   auth: {
@@ -45,6 +45,10 @@ export const api = {
             sourceId
         });
         return response.data;
+    },
+    getTopUpHistory: async () => {
+      const response = await client.get<{ success: boolean; transactions: TopUpTransaction[] }>('/api/mobile/wallet/history');
+      return response.data;
     },
     uploadProfilePicture: async (data: { profilePicture: string }) => {
         const response = await client.post<{ success: boolean; passenger: User; message: string }>('/api/mobile/passenger/profile-picture', data);

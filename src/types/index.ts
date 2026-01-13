@@ -38,6 +38,16 @@ export interface Trip {
   travelTime?: number;
 }
 
+export interface TopUpTransaction {
+  id: string;
+  amount: number;
+  method: string;
+  status: string;
+  createdAt: string;
+  paymentId?: string;
+  sourceId?: string;
+}
+
 export interface AuthResponse {
   message: string;
   token: string;
