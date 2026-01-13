@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Button, Alert, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { api } from '../api/endpoints';
 import { BASE_URL } from '../api/client';
 import { useAuthStore } from '../store/authStore';
@@ -13,6 +14,12 @@ export const ScannerScreen = () => {
   const lockRef = useRef(false);
   const navigation = useNavigation();
   const { user } = useAuthStore();
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: 'Scan Station QR Code',
+    });
+  }, [navigation]);
 
   if (!permission) {
     // Camera permissions are still loading.
@@ -58,12 +65,12 @@ export const ScannerScreen = () => {
       if (action === 'tap_in') {
         await api.trips.tapIn(user!.username, stationId);
         Alert.alert('Success', 'Tapped In Successfully!', [
-          { text: 'OK', onPress: () => navigation.goBack() }
+          { text: 'OK', onPress: () => { setScanned(false); lockRef.current = false; } }
         ]);
       } else {
         const result = await api.trips.tapOut(user!.username, stationId);
         Alert.alert('Success', `Tapped Out! Fare: ₱${result.trip.fare}`, [
-          { text: 'OK', onPress: () => navigation.goBack() }
+          { text: 'OK', onPress: () => { setScanned(false); lockRef.current = false; } }
         ]);
       }
 
@@ -75,9 +82,9 @@ export const ScannerScreen = () => {
       // it likely means a race condition happened and it was already processed.
       // We can treat it as success or just ignore it to avoid spam.
       if (msg.includes('No active trip found') || msg.includes('Passenger already has an active trip')) {
-         // Optionally just navigate back or show a less alarming message
+         // Just reset and try again
          Alert.alert('Info', 'Transaction may have already been processed.', [
-             { text: 'OK', onPress: () => navigation.goBack() }
+             { text: 'OK', onPress: () => { setScanned(false); lockRef.current = false; } }
          ]);
       } else {
           Alert.alert('Error', `${msg}\n(URL: ${BASE_URL})`, [

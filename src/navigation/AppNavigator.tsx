@@ -5,7 +5,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
 import { LoginScreen } from '../screens/LoginScreen';
-import { HomeScreen } from '../screens/HomeScreen';
 import { WalletScreen } from '../screens/WalletScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ScannerScreen } from '../screens/ScannerScreen';
@@ -29,8 +28,8 @@ const TabNavigator = () => (
       tabBarIcon: ({ focused, color, size }) => {
         let iconName: keyof typeof Ionicons.glyphMap;
 
-        if (route.name === 'Home') {
-          iconName = focused ? 'home' : 'home-outline';
+        if (route.name === 'Scanner') {
+          iconName = focused ? 'qr-code' : 'qr-code-outline';
         } else if (route.name === 'Wallet') {
           iconName = focused ? 'wallet' : 'wallet-outline';
         } else if (route.name === 'Profile') {
@@ -45,7 +44,7 @@ const TabNavigator = () => (
       tabBarInactiveTintColor: 'gray',
     })}
   >
-    <Tab.Screen name="Home" component={HomeScreen} />
+    <Tab.Screen name="Scanner" component={ScannerScreen} options={{ headerShown: false }} />
     <Tab.Screen name="Wallet" component={WalletScreen} />
     <Tab.Screen name="Profile" component={ProfileScreen} />
   </Tab.Navigator>
@@ -57,15 +56,6 @@ const MainNavigator = () => (
       name="MainTabs" 
       component={TabNavigator} 
       options={{ headerShown: false }} 
-    />
-    <MainStack.Screen 
-      name="Scanner" 
-      component={ScannerScreen} 
-      options={{ 
-        presentation: 'modal',
-        headerTitle: 'Scan QR Code',
-        headerBackTitle: 'Close'
-      }} 
     />
   </MainStack.Navigator>
 );
