@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView, ScrollView } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { api } from '../api/endpoints';
 import { useNavigation } from '@react-navigation/native';
 
@@ -14,6 +14,12 @@ export const SignupScreen = () => {
   });
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
+  
+  const emailRef = useRef<TextInput>(null);
+  const firstNameRef = useRef<TextInput>(null);
+  const lastNameRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
 
   const handleChange = (name: string, value: string) => {
     setFormData({
@@ -57,7 +63,12 @@ export const SignupScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Sign up for GlobalTek MRT</Text>
@@ -70,50 +81,72 @@ export const SignupScreen = () => {
               onChangeText={(val) => handleChange('username', val)}
               placeholder="Enter username"
               autoCapitalize="none"
+              returnKeyType="next"
+              onSubmitEditing={() => emailRef.current?.focus()}
+              blurOnSubmit={false}
             />
 
             <Text style={styles.label}>Email</Text>
             <TextInput
+              ref={emailRef}
               style={styles.input}
               value={formData.email}
               onChangeText={(val) => handleChange('email', val)}
               placeholder="Enter email"
               autoCapitalize="none"
               keyboardType="email-address"
+              returnKeyType="next"
+              onSubmitEditing={() => firstNameRef.current?.focus()}
+              blurOnSubmit={false}
             />
 
             <Text style={styles.label}>First Name</Text>
             <TextInput
+              ref={firstNameRef}
               style={styles.input}
               value={formData.firstName}
               onChangeText={(val) => handleChange('firstName', val)}
               placeholder="Enter first name"
+              returnKeyType="next"
+              onSubmitEditing={() => lastNameRef.current?.focus()}
+              blurOnSubmit={false}
             />
 
             <Text style={styles.label}>Last Name</Text>
             <TextInput
+              ref={lastNameRef}
               style={styles.input}
               value={formData.lastName}
               onChangeText={(val) => handleChange('lastName', val)}
               placeholder="Enter last name"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              blurOnSubmit={false}
             />
 
             <Text style={styles.label}>Password *</Text>
             <TextInput
+              ref={passwordRef}
               style={styles.input}
               value={formData.password}
               onChangeText={(val) => handleChange('password', val)}
               placeholder="Enter password"
               secureTextEntry
+              returnKeyType="next"
+              onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+              blurOnSubmit={false}
             />
 
             <Text style={styles.label}>Confirm Password *</Text>
             <TextInput
+              ref={confirmPasswordRef}
               style={styles.input}
               value={formData.confirmPassword}
               onChangeText={(val) => handleChange('confirmPassword', val)}
               placeholder="Confirm password"
               secureTextEntry
+              returnKeyType="done"
+              onSubmitEditing={handleSignup}
             />
 
             <TouchableOpacity style={styles.button} onPress={handleSignup} disabled={loading}>
@@ -129,7 +162,9 @@ export const SignupScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -138,6 +173,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,

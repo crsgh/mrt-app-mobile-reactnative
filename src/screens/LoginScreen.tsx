@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView, Image } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { api } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
@@ -14,6 +14,7 @@ export const LoginScreen = () => {
   const { login } = useAuthStore();
   const [serverStatus, setServerStatus] = useState<'checking' | 'ok' | 'error'>('checking');
   const navigation = useNavigation();
+  const passwordRef = useRef<TextInput>(null);
   
   React.useEffect(() => {
     checkServer();
@@ -56,8 +57,13 @@ export const LoginScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Image 
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.content}>
+            <Image 
           source={require('../../assets/globaltek-logo.png')} 
           style={styles.logo}
         />
@@ -87,15 +93,21 @@ export const LoginScreen = () => {
             onChangeText={setUsername}
             placeholder="Enter your username"
             autoCapitalize="none"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            blurOnSubmit={false}
           />
 
           <Text style={styles.label}>Password</Text>
           <TextInput
+            ref={passwordRef}
             style={styles.input}
             value={password}
             onChangeText={setPassword}
             placeholder="Enter your password"
             secureTextEntry
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
           />
 
           <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
@@ -110,7 +122,9 @@ export const LoginScreen = () => {
             <Text style={styles.signupText}>Don't have an account? Sign Up</Text>
           </TouchableOpacity>
         </View>
-      </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -119,6 +133,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  keyboardView: {
+    flex: 1,
   },
   content: {
     flex: 1,
