@@ -24,10 +24,12 @@ export interface Station {
 export interface Trip {
   id: string;
   startStation: {
+    id: string;
     name: string;
     code: string;
   };
   endStation?: {
+    id: string;
     name: string;
     code: string;
   };

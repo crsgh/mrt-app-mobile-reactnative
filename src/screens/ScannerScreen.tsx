@@ -65,7 +65,15 @@ export const ScannerScreen = () => {
       const activeTrip = tripsData.trips.find(t => t.status === 'active');
       
       const action = activeTrip ? 'tap_out' : 'tap_in';
-      const stationId = data; // Assuming QR code is just the stationId string
+      const stationId = data; // QR code contains the station's MongoDB _id
+
+      // Validate: cannot tap out at the same station where you tapped in
+      if (action === 'tap_out' && activeTrip?.startStation?.id && stationId === activeTrip.startStation.id) {
+        Alert.alert('Invalid Tap', 'You cannot tap out at the same station where you tapped in.', [
+          { text: 'OK', onPress: () => { setScanned(false); lockRef.current = false; } }
+        ]);
+        return;
+      }
 
       // Double check if we already processed this
       if (action === 'tap_out' && !activeTrip) {
